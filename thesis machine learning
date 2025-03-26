@@ -1,0 +1,255 @@
+clear all
+close all
+
+runana = 0;
+
+if runana
+   FourierFeatures                                         = [];
+   Fourier_Mag_Pha                                         = [];
+   Fourier_Pha                                             = [];
+   HOGFeatures                                             = [];
+   Distributions                                           = [];
+   Pixels                                                  = [];
+   refGrid_FourierFeatures                                 = [];
+   refGrid_Fourier_Mag_Pha                                 = [];
+   refGrid_Fourier_Pha                                     = [];
+   refGrid_HOGFeatures                                     = [];
+   refGrid_Distributions                                   = [];
+   refGrid_Pixels                                          = [];
+
+   settings                                                = protosc_Settings;
+   settings.nfolds                                         = 8;
+   settings.convertrgb                                     = 1;
+
+   ImageDir    = '/Users/jannekekrediet/Desktop/bachelor thesis/bodies + art cropped';
+   DataDir     = '//Users/jannekekrediet/Desktop/bachelor thesis/data test/data/art data test';
+   cd(DataDir)
+
+   Sheets      = dir('*.xlsx');
+
+   FileLists                           = protosc_ImageFileList(ImageDir);
+
+   % [Stims,settings]                    = protosc_loadImages(FileLists);
+
+   for pp = 1:size(Sheets,1)
+       for cond = 1:2
+           if cond == 1
+               DataDir     = '/Users/jannekekrediet/Desktop/bachelor thesis/data test/data/art data test';
+               cd(DataDir)
+               Sheets      = dir('*.xlsx');
+               FileLists                           = protosc_ImageFileList(ImageDir);
+               SubName = 'abstract';
+           else
+               DataDir     = '/Users/jannekekrediet/Desktop/bachelor thesis/data test/data/body data test';
+               cd(DataDir)
+               Sheets      = dir('*.xlsx');
+               FileLists                           = protosc_ImageFileList(ImageDir);
+               SubName = 'body';
+           end
+
+           T           = readtable([DataDir filesep Sheets(pp).name],'FileType','Spreadsheet');
+           Neg_ims     = T.Spreadsheet_Image(contains(T.Response,'Negative') & contains(T.Spreadsheet_Image,SubName));
+           Pos_ims     = T.Spreadsheet_Image(contains(T.Response,'Positive') & contains(T.Spreadsheet_Image,SubName));
+           App_ims     = T.Spreadsheet_Image(contains(T.Response,'Appealing') & contains(T.Spreadsheet_Image,SubName));
+           UnApp_ims   = T.Spreadsheet_Image(contains(T.Response,'Unappealing') & contains(T.Spreadsheet_Image,SubName));
+
+           cd(imageDir)
+
+           clear Stims_Pos
+           clear Stims_App
+           clear Stims_Att
+
+           for ii = 1:size(Pos_ims,1)
+               Stims_Pos{1}(ii).im = double(imread(Pos_ims{ii}));
+           end
+
+           for ii = 1:size(Neg_ims,1)
+               Stims_Pos{2}(ii).im = double(imread(Neg_ims{ii}));
+           end
+
+           for ii = 1:size(App_ims,1)
+               Stims_App{1}(ii).im = double(imread(App_ims{ii}));
+           end
+
+           for ii = 1:size(UnApp_ims,1)
+               Stims_App{2}(ii).im = double(imread(UnApp_ims{ii}));
+           end
+
+           [FourierFeatures,refGrid_FourierFeatures]               = protosc_Stims2Fourier_Magnitude_Features_Segmented(Stims_Pos,settings);
+           [AllData, ~]                                            = protosc_Features2DataMatrix(settings,FourierFeatures,Fourier_Mag_Pha,Fourier_Pha,HOGFeatures,Distributions,Pixels);
+           [settings.ReferenceMap, ~]                              = protosc_SetRefGrids(settings,refGrid_FourierFeatures,refGrid_Fourier_Mag_Pha,refGrid_Fourier_Pha,refGrid_HOGFeatures,refGrid_Distributions,refGrid_Pixels);
+           out_Pos(pp,cond)                                        = protosc_FeatureSelection(AllData,settings);
+           [FourierFeatures,refGrid_FourierFeatures]               = protosc_Stims2Fourier_Magnitude_Features_Segmented(Stims_App,settings);
+           [AllData, ~]                                            = protosc_Features2DataMatrix(settings,FourierFeatures,Fourier_Mag_Pha,Fourier_Pha,HOGFeatures,Distributions,Pixels);
+           [settings.ReferenceMap, ~]                              = protosc_SetRefGrids(settings,refGrid_FourierFeatures,refGrid_Fourier_Mag_Pha,refGrid_Fourier_Pha,refGrid_HOGFeatures,refGrid_Distributions,refGrid_Pixels);
+           out_App(pp,cond)                                        = protosc_FeatureSelection(AllData,settings);
+
+           if cond == 2
+               Att_ims = T.Spreadsheet_Image(contains(T.Response,'Attractive'));
+               UnAtt_ims = T.Spreadsheet_Image(contains(T.Response,'Unattractive'));
+               forii = 1:size(Att_ims,1)
+                   Stims_Att{1}(ii).im = double(imread(Att_ims{ii}));
+               end
+
+               for ii = 1:size(UnAtt_ims,1)
+                   Stims_Att{2}(ii).im = double(imread(UnAtt_ims{ii}));
+               end
+
+               [FourierFeatures,refGrid_FourierFeatures]               = protosc_Stims2Fourier_Magnitude_Features_Segmented(Stims_Att,settings);
+               [AllData, ~]                                            = protosc_Features2DataMatrix(settings,FourierFeatures,Fourier_Mag_Pha,Fourier_Pha,HOGFeatures,Distributions,Pixels);
+               [settings.ReferenceMap, ~]                              = protosc_SetRefGrids(settings,refGrid_FourierFeatures,refGrid_Fourier_Mag_Pha,refGrid_Fourier_Pha,refGrid_HOGFeatures,refGrid_Distributions,refGrid_Pixels);
+               out_Att(pp,cond)                                        = protosc_FeatureSelection(AllData,settings);
+           end
+       end
+   end
+
+   save croppedimagetest_run1
+else
+   load croppedimagetest_run1
+end
+
+%%%%% Hypo testing 1
+% decodable
+
+test_dist1                           = out_Pos(1,1).Results.FullModel.Accuracy;
+chance_dist                         = out_Pos(1,1).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist1                           = out_Pos(1,2).Results.FullModel.Accuracy;
+chance_dist                         = out_Pos(1,2).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist1                           = out_App(1,1).Results.FullModel.Accuracy;
+chance_dist                         = out_App(1,1).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist1                           = out_App(1,2).Results.FullModel.Accuracy;
+chance_dist                         = out_App(1,2).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist1                           = out_Att(1,2).Results.FullModel.Accuracy;
+chance_dist                         = out_Att(1,2).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist2                           = out_Pos(2,1).Results.FullModel.Accuracy;
+chance_dist                         = out_Pos(2,1).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist2                           = out_Pos(2,2).Results.FullModel.Accuracy;
+chance_dist                         = out_Pos(2,2).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist2                           = out_App(2,1).Results.FullModel.Accuracy;
+chance_dist                         = out_App(2,1).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist2                           = out_App(2,2).Results.FullModel.Accuracy;
+chance_dist                         = out_App(2,2).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist2                           = out_Att(2,2).Results.FullModel.Accuracy;
+chance_dist                         = out_Att(2,2).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist3                           = out_Pos(3,1).Results.FullModel.Accuracy;
+chance_dist                         = out_Pos(3,1).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist3                           = out_Pos(3,2).Results.FullModel.Accuracy;
+chance_dist                         = out_Pos(3,2).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist3                          = out_App(3,1).Results.FullModel.Accuracy;
+chance_dist                         = out_App(3,1).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist3                           = out_App(3,2).Results.FullModel.Accuracy;
+chance_dist                         = out_App(3,2).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist3                           = out_Att(3,2).Results.FullModel.Accuracy;
+chance_dist                         = out_Att(3,2).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist4                           = out_Pos(4,1).Results.FullModel.Accuracy;
+chance_dist                         = out_Pos(4,1).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist4                           = out_Pos(4,2).Results.FullModel.Accuracy;
+chance_dist                         = out_Pos(4,2).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist4                           = out_App(4,1).Results.FullModel.Accuracy;
+chance_dist                         = out_App(4,1).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist4                           = out_App(4,2).Results.FullModel.Accuracy;
+chance_dist                         = out_App(4,2).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+test_dist4                           = out_Att(4,2).Results.FullModel.Accuracy;
+chance_dist                         = out_Att(4,2).Results.ControlFilter.Accuracy(:);
+probability_chance_bigger_than_test = mean(mean((chance_dist>test_dist)));
+
+% figures
+% mean(test_dist) als bar, met std(test_dist)./sqrt(length(test_dist))
+
+figure (31);
+x = (1:4);
+y = [mean(test_dist1),mean(test_dist2),mean(test_dist3),mean(test_dist4)];
+bar(x,y);
+hold on;
+
+e1 = std(test_dist1)./sqrt(length(test_dist1));
+e2 = std(test_dist2)./sqrt(length(test_dist2));
+e3 = std(test_dist3)./sqrt(length(test_dist3));
+e4 = std(test_dist4)./sqrt(length(test_dist4));
+errorbar (1, y,e1,'ko');
+
+% feature selection results
+% FFT plaatjes
+%%%%% Hypo testing 2
+% cross decoding
+% figures
+% % positieve/negative kunst positieve/negative lichamen
+
+Results(1,1) = protosc_ModelGeneralisation(out_Pos(1,1),out_Pos(1,2));
+Results(2,1) = protosc_ModelGeneralisation(out_Pos(2,1),out_Pos(2,2));
+Results(3,1) = protosc_ModelGeneralisation(out_Pos(3,1),out_Pos(3,2));
+Results(4,1) = protosc_ModelGeneralisation(out_Pos(4,1),out_Pos(4,2));
+
+% % positieve/negative kunst attractive/unattractive lichamen
+
+Results(1,2) = protosc_ModelGeneralisation(out_Pos(1,1),out_Att(1,2));
+Results(2,2) = protosc_ModelGeneralisation(out_Pos(2,1),out_Att(2,2));
+Results(3,2) = protosc_ModelGeneralisation(out_Pos(3,1),out_Att(3,2));
+Results(4,2) = protosc_ModelGeneralisation(out_Pos(4,1),out_Att(4,2));
+
+% % appealing/unappealing kunst appealing/unappealing lichamen
+
+Results(1,4) = protosc_ModelGeneralisation(out_App(1,1),out_App(1,2));
+Results(2,4) = protosc_ModelGeneralisation(out_App(2,1),out_App(2,2));
+Results(3,4) = protosc_ModelGeneralisation(out_App(3,1),out_App(3,2));
+Results(4,4) = protosc_ModelGeneralisation(out_App(4,1),out_App(4,2));
+
+% % appealing/unappealing kunst attractive/unattractive lichamen
+
+Results(1,5) = protosc_ModelGeneralisation(out_App(1,1),out_Att(1,2));
+Results(2,5) = protosc_ModelGeneralisation(out_App(2,1),out_Att(2,2));
+Results(3,5) = protosc_ModelGeneralisation(out_App(3,1),out_Att(3,2));
+Results(3,5) = protosc_ModelGeneralisation(out_App(4,1),out_Att(4,2));
+for ii = 1:4
+
+   temp                        = protosc_ModelGeneralisation(out_Pos(ii,1),out_Pos(ii,2));
+   performance_map(ii,1)       = mean(temp.p1_2_full);
+   p_map(ii,1)                 = Results.PFull_1_2;
+   temp                        = protosc_ModelGeneralisation(out_Pos(ii,1),out_Att(ii,2));
+   performance_map(ii,2)       = mean(temp.p1_2_full);
+   p_map(ii,2)                 = Results.PFull_1_2;
+   temp                        = protosc_ModelGeneralisation(out_App(ii,1),out_App(ii,2));
+   performance_map(ii,3)       = mean(temp.p1_2_full);
+   p_map(ii,3)                 = Results.PFull_1_2;
+   temp                        = protosc_ModelGeneralisation(out_App(ii,1),out_Att(ii,2));
+   performance_map(ii,4)       = mean(temp.p1_2_full);
+   p_map(ii,4)                 = Results.PFull_1_2;
+
+end
+
+figure
+imagesc(performance_map)
+performance_map
+p_map
+
+% FOURIER GRAPH GEZAMELIJK
+
+for ii = 1:4:size(Pos_ims,1)
+      Stims_Pos{1}(ii).im = double(imread(Pos_ims{ii}));
+      hold on;
+      Stims_Pos{2}(ii).im = double(imread(Neg_ims{ii}));
+  end
+
+[FourierFeatures,refGrid_FourierFeatures]               = protosc_Stims2Fourier_Magnitude_Features_Segmented(Stims_Pos,settings);
+[AllData, ~]                                            = protosc_Features2DataMatrix(settings,FourierFeatures,Fourier_Mag_Pha,Fourier_Pha,HOGFeatures,Distributions,Pixels);
+[settings.ReferenceMap, ~]                              = protosc_SetRefGrids(settings,refGrid_FourierFeatures,refGrid_Fourier_Mag_Pha,refGrid_Fourier_Pha,refGrid_HOGFeatures,refGrid_Distributions,refGrid_Pixels);
+out_Pos1(pp,cond)                                       = protosc_FeatureSelection(AllData,settings);
