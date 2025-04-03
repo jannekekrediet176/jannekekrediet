@@ -1,3 +1,8 @@
+% This code was used to complete my bachelor thesis. The purpose of my research was to determine whether people their preference in women bodies could be predicted based on their opinions on abstract art.
+% We had several participants judge 500 images of abstract art and 500 images of nude female bodies. The body images were cropped so that faces were not visible and as much background as possible was
+% cropped out to minimalize noise. Furthermore, a filter was applied to all images to sharpen edges and find common frequencies.
+% The data the participants generated gave us classifications we then used to train a learning machine to see if it was possible to predict their bodily preference.
+
 clear all
 close all
 
