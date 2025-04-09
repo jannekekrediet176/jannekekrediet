@@ -1,0 +1,170 @@
+// Hangman in Java
+
+import java.util.Arrays; // This is used for arrays, so you can fill them with values.
+import java.util.Scanner; // This is used to read the guesses of the player.
+
+public class Hangman { // makes the hangman class
+
+    // List of random words computer chooses from.
+    public static String[] words = {"ant", "baboon", "badger", "bat", "bear", "beaver", "camel",
+    "cat", "clam", "cobra", "cougar", "coyote", "crow", "deer",
+    "dog", "donkey", "duck", "eagle", "ferret", "fox", "frog", "goat",
+    "goose", "hawk", "lion", "lizard", "llama", "mole", "monkey", "moose",
+    "mouse", "mule", "newt", "otter", "owl", "panda", "parrot", "pigeon", 
+    "python", "rabbit", "ram", "rat", "raven","rhino", "salmon", "seal",
+    "shark", "sheep", "skunk", "sloth", "snake", "spider", "stork", "swan",
+    "tiger", "toad", "trout", "turkey", "turtle", "weasel", "whale", "wolf",
+    "wombat", "zebra"};
+
+    public static String randomWord() { // This part defines a method called randomWord in order to return a random word from the list.
+        int index = (int) (Math.random() * words.length); // This part picks a random number between 0 and the number of words in the list. Math.random gives a number between 0 and 1 so it needs to be multiplied by the length of the word to make it the correct size.
+        // Because it is defined as an int it is forced to be an integer.
+        return words[index]; // This returns the word that was randomly picked.
+    }
+
+    public static String[] gallows = {
+
+    // Hangman figure
+    // 0 mistakes
+    "+---+\n" +
+    "|   |\n" +
+    "    |\n" +
+    "    |\n" +
+    "    |\n" +
+    "    |\n" +
+    "=========\n",
+
+    // 1 mistakes
+    "+---+\n" +
+    "|   |\n" +
+    "O   |\n" +
+    "    |\n" +
+    "    |\n" +
+    "    |\n" +
+    "=========\n",
+
+    // 2 mistakes
+    "+---+\n" +
+    "|   |\n" +
+    "O   |\n" +
+    "|   |\n" +
+    "    |\n" +
+    "    |\n" +
+    "=========\n",
+
+    // 3 mistakes
+    " +---+\n" +
+    " |   |\n" +
+    " O   |\n" +
+    "/|   |\n" +
+    "     |\n" +
+    "     |\n" +
+    " =========\n",
+
+    // 4 mistakes
+    //if you were wondering, the only way to print '\' is with a trailing escape character, which also happens to be '\'
+    " +---+\n" +
+    " |   |\n" +
+    " O   |\n" +
+    "/|\\  |\n" + 
+    "     |\n" +
+    "     |\n" +
+    " =========\n",
+
+    // 5 mistakes
+    " +---+\n" +
+    " |   |\n" +
+    " O   |\n" +
+    "/|\\  |\n" +
+    "/    |\n" +
+    "     |\n" +
+    " =========\n",
+
+    // 6 mistakes
+    " +---+\n" +
+    " |   |\n" +
+    " O   |\n" +
+    "/|\\  |\n" + 
+    "/ \\  |\n" +
+    "     |\n" +
+    " =========\n"};
+
+    public static void main(String[] args) {
+
+        Scanner scanner = new Scanner(System.in); // Creates scanner to collect guesses.
+
+        String word = randomWord(); // Chooses a random word from the list of words.
+
+        char[] placeholders = new char[word.length()]; // This part fills every spot in the array with '_'.
+        Arrays.fill(placeholders, '_'); //I used arrays.fill to automatically replace every spot with an underscore.
+
+        int misses = 0; // Creates a counter to track wrong guesses
+        char[] wrongGuesses = new char[6]; // Creates an array to store the wrong guesses.
+        char[] guessedLetters = new char[26]; // Creates array to store guessed letters.
+        int guessedCount = 0; // Tracks how many letters have been guessed.
+        int wrongCount = 0; // Tracks how many wrong guesses are made.
+
+        // 'while' is a loop that stops when the player guesses the word or made more than 6 wrong guesses.
+        // The new String(placeholders) checks if there are still underscores in the array.
+        while (misses < 6 && new String(placeholders).contains("_")) {
+
+            // Prints the gallow based on how many wrong guesses there are.
+            System.out.println(gallows[misses]);
+            System.out.print("Word: ");
+            System.out.println(placeholders);
+
+            // This prints the wrong guesses and seperates them with a space
+            System.out.print("Wrong guesses: ");
+            for (int i = 0; i < wrongCount; i++) { // int i = 0 means that i will keep track of what loop you're in. i++ adds one. The loop will run as long as i is less than the wrongCount.
+                System.out.print(wrongGuesses[i] + " "); // This checks the wrong guesses that are in 'wrongGuesses' by checking i and prints the wrong guesses.
+            }
+            System.out.println(); // This prints a blank line after the list of the wrong guesses so that the next output starts on a new line.
+
+            System.out.print("Guess: "); // This asks for a guess.
+            String input = scanner.nextLine().toLowerCase(); // This makes sure the player can enter lower and uppercase letters and converts it to lowercase.
+
+            if (input.isEmpty()) { // Checks if the player put in a guess.
+                continue; // If this is true this skips the turn.
+            }
+
+            char guess = input.charAt(0); // If the player enters more than one letters in one guess this takes the first character.
+
+            boolean alreadyGuessed = false; // This part checks if the letter was guessed before.
+            for (int i = 0; i < guessedCount; i++) { // This starts the for loop that checks the already guessed letters in the guessedLetters array. The loop runs as long as i is less than guessedCount.
+                if (guessedLetters[i] == guess) { // This part checks if the guess is the same as a letter in guessedLetters.
+                    alreadyGuessed = true; // If the letter has already been guessed this puts it in alreadyGuessed.
+                    break; // This will stop the loop if the letter is in the guessedLetters array.
+                }
+            }
+            if (alreadyGuessed) {
+                continue; // This part makes sure that if a letter is already guessed the turn gets skipped.
+            }
+            guessedLetters[guessedCount] = guess; // If the letter wasn't guessed before the guessed letter is added to guessedCount here.
+            guessedCount++; // + 1
+
+            boolean correct = false; // This variable will track if the guess matches a letter in the word.
+            for (int i = 0; i < word.length(); i++) { // This is a for loop that will check every letter in the word. Word.length() shows the number of letters in a word. the i tracks what the current place in the word is.
+                if (word.charAt(i) == guess) { // Checks if the  letter at the i position in the word is the same as the guessed letter. word.charAt(i) does this.
+                    placeholders[i] = guess; // If the letter is the same as the letter i in the word, the placeholders array is updated.
+                    correct = true; // If the letter is the same this variable is set to true so the game knows the guess was true.
+                }
+            }
+
+            if (!correct) { // This part checks if correct is false (! means opposite). If this is true the next part of the code will run.
+                wrongGuesses[wrongCount] = guess; // This adds the guessed letter to the wrongGuesses array at the position wrongCount (which updates every time there is a wrong guess).
+                wrongCount++; // This part updates the wrongCount so that the next incorrect guess can go in the next spot.
+                misses++; // This part tracks how many wrong guesses there were in total, this is used to update the hangman figure.
+            }
+        }
+
+        System.out.println(gallows[misses]); // This part prints the hangman figure based on how many wrongly guessed letters there were.
+        System.out.print("Word: "); // Creates the label words.
+        System.out.println(placeholders); // This part prints the letters and underscores in the word. Placeholders has underscores for missing letters and letters for the correctly guessed letters.
+
+        if (misses == 6) { // This part checks if there were 6 mistakes made. If misses equals 6 this code runs.
+            System.out.println("Game Over. The word was: " + word); // This part prints game over and tells the player the correct word.
+        } else { // If there were less than 6 mistakes.
+            System.out.println("You guessed it!"); // This part runs if the player guessed all the letters before making 6 mistakes.
+        }
+    }
+}
